@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xray Panel</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #1a1a2e;
+  --bg2: #16213e;
+  --card: #0f3460;
+  --primary: #e94560;
+  --accent: #533483;
+  --text: #e0e0e0;
+  --text2: #a0a0b0;
+  --border: #2a2a4a;
+  --success: #4caf50;
+  --danger: #f44336;
+  --warning: #ff9800;
+}
+body {
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+/* Login */
+.login-page {
+  display: flex; justify-content: center; align-items: center;
+  height: 100vh; background: linear-gradient(135deg, var(--bg) 0%, var(--bg2) 100%);
+}
+.login-card {
+  background: var(--card); padding: 40px; border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3); width: 380px;
+}
+.login-card h2 { text-align: center; margin-bottom: 30px; color: #fff; }
+.login-card h2 span { color: var(--primary); }
+.login-card input {
+  width: 100%; padding: 12px; margin-bottom: 16px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); font-size: 14px;
+}
+.login-card input:focus { outline: none; border-color: var(--primary); }
+.login-card button {
+  width: 100%; padding: 12px; border: none; border-radius: 6px;
+  background: var(--primary); color: white; font-size: 16px; cursor: pointer;
+  transition: all 0.3s;
+}
+.login-card button:hover { opacity: 0.9; transform: translateY(-1px); }
+.login-error { color: var(--danger); text-align: center; margin-top: 10px; display: none; }
+
+/* Layout */
+.app { display: none; }
+.sidebar {
+  position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+  background: var(--bg2); border-right: 1px solid var(--border);
+  padding: 20px 0; z-index: 100;
+}
+.sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 10px; }
+.sidebar-header h2 { color: #fff; font-size: 18px; }
+.sidebar-header h2 small { font-size: 11px; color: var(--text2); display: block; margin-top: 4px; }
+.sidebar-nav { padding: 0; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px; cursor: pointer; transition: all 0.2s;
+  color: var(--text2); border-left: 3px solid transparent;
+}
+.nav-item:hover { background: rgba(233,69,96,0.1); color: var(--text); }
+.nav-item.active { background: rgba(233,69,96,0.15); color: var(--primary); border-left-color: var(--primary); }
+.nav-item .icon { font-size: 18px; width: 22px; text-align: center; }
+.main {
+  margin-left: 240px; padding: 20px; min-height: 100vh;
+}
+.topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 20px; background: var(--bg2); border-radius: 8px;
+  margin-bottom: 20px; border: 1px solid var(--border);
+}
+.topbar h1 { font-size: 20px; color: #fff; }
+.topbar h1 small { font-size: 12px; color: var(--text2); margin-left: 8px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.logout-btn {
+  padding: 6px 16px; background: transparent; border: 1px solid var(--border);
+  color: var(--text); border-radius: 4px; cursor: pointer; font-size: 13px;
+}
+.logout-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+/* Stats Cards */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 20px;
+}
+.stat-card .stat-value { font-size: 28px; font-weight: bold; color: #fff; margin-bottom: 4px; }
+.stat-card .stat-label { font-size: 13px; color: var(--text2); }
+
+/* Cards */
+.card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 20px; margin-bottom: 16px;
+}
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.card-header h3 { color: #fff; font-size: 16px; }
+.btn {
+  padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer;
+  font-size: 13px; transition: all 0.2s;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-warning { background: var(--warning); color: #fff; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-group { display: flex; gap: 6px; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--text2); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+tr:hover { background: rgba(255,255,255,0.02); }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 11px; font-weight: 500;
+}
+.badge-vless { background: #e94560; color: #fff; }
+.badge-vmess { background: #533483; color: #fff; }
+.badge-trojan { background: #4caf50; color: #fff; }
+.badge-ss { background: #ff9800; color: #fff; }
+.badge-socks { background: #2196f3; color: #fff; }
+.badge-transport { background: rgba(255,255,255,0.1); color: var(--text2); }
+.badge-security { background: rgba(233,69,96,0.2); color: var(--primary); }
+
+/* Form */
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 4px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 8px 10px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 4px; color: var(--text); font-size: 13px;
+}
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); }
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000; display: none;
+}
+.modal {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; width: 90%; max-width: 650px; max-height: 85vh;
+  overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+}
+.modal-header h3 { color: #fff; font-size: 16px; }
+.modal-close { background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; }
+.modal-close:hover { color: var(--danger); }
+.modal-body { padding: 20px; }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 20px; border-top: 1px solid var(--border);
+}
+
+/* Tab */
+.tabs { display: flex; gap: 2px; margin-bottom: 16px; }
+.tab {
+  padding: 8px 16px; cursor: pointer; font-size: 13px;
+  border-bottom: 2px solid transparent; color: var(--text2);
+  transition: all 0.2s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+/* Empty */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Link Display */
+.link-display {
+  background: var(--bg); padding: 10px; border-radius: 4px;
+  border: 1px solid var(--border); font-size: 12px; word-break: break-all;
+  margin: 8px 0; font-family: monospace;
+}
+.copy-btn {
+  float: right; padding: 2px 8px; font-size: 11px;
+  background: var(--card); color: var(--text); border: 1px solid var(--border);
+  border-radius: 3px; cursor: pointer;
+}
+.copy-btn:hover { border-color: var(--primary); }
+
+/* Table status */
+.status-enabled { color: var(--success); }
+.status-disabled { color: var(--danger); }
+
+/* Section */
+.section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px;
+}
+.section-header h3 { color: #fff; font-size: 16px; }
+
+/* Toast */
+.toast {
+  position: fixed; top: 20px; right: 20px; padding: 12px 20px;
+  border-radius: 6px; color: #fff; font-size: 13px; z-index: 2000;
+  display: none; animation: slideIn 0.3s;
+}
+.toast-success { background: var(--success); }
+.toast-error { background: var(--danger); }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar { width: 60px; }
+  .sidebar .nav-item span:not(.icon) { display: none; }
+  .sidebar-header h2 { font-size: 14px; }
+  .sidebar-header small { display: none !important; }
+  .main { margin-left: 60px; }
+  .form-row { grid-template-columns: 1fr; }
+  .form-row-3 { grid-template-columns: 1fr; }
+  .modal { width: 95%; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+
+/* Checkbox toggle */
+.toggle {
+  position: relative; width: 36px; height: 20px; display: inline-block;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle .slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: var(--border); border-radius: 10px; transition: 0.3s;
+}
+.toggle .slider:before {
+  content: ''; position: absolute; height: 14px; width: 14px;
+  left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s;
+}
+.toggle input:checked + .slider { background: var(--success); }
+.toggle input:checked + .slider:before { transform: translateX(16px); }
+/* details/summary for client list */
+details summary { cursor: pointer; color: var(--primary); font-size: 13px; }
+details summary:focus { outline: none; }
+details { margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="login-page" id="loginPage">
+  <div class="login-card">
+    <h2>🔐 <span>Xray</span> Panel</h2>
+    <input type="text" id="loginUser" placeholder="Username" value="admin">
+    <input type="password" id="loginPass" placeholder="Password" value="admin123">
+    <button onclick="login()">Login</button>
+    <div class="login-error" id="loginError">Invalid credentials</div>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>⚡ Xray <small>v1.0.0</small></h2>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">📊</span> <span>Dashboard</span></div>
+      <div class="nav-item" onclick="showPage('inbounds')"><span class="icon">📡</span> <span>Inbounds</span></div>
+      <div class="nav-item" onclick="showPage('config')"><span class="icon">⚙️</span> <span>Export Config</span></div>
+      <div class="nav-item" onclick="showPage('settings')"><span class="icon">🔧</span> <span>Settings</span></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1 id="pageTitle">Dashboard <small id="pageSubtitle">Overview</small></h1>
+      <div class="topbar-right">
+        <span style="font-size:13px;color:var(--text2)">👤 admin</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <div id="dashboard">
+      <div class="stats-grid" id="statsGrid"></div>
+      <div class="card">
+        <div class="card-header"><h3>📋 Inbounds Overview</h3></div>
+        <div class="table-wrap"><table><thead><tr>
+          <th>Remark</th><th>Protocol</th><th>Port</th><th>Transport</th><th>Security</th><th>Clients</th><th>Status</th>
+        </tr></thead><tbody id="inboundsOverview"></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="inbounds" style="display:none">
+      <div class="section-header">
+        <h3>📡 Inbounds</h3>
+        <button class="btn btn-primary" onclick="showAddInbound()">+ Add Inbound</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table><thead><tr>
+          <th>Remark</th><th>Protocol</th><th>Port</th><th>Transport</th><th>Security</th><th>Clients</th><th>Actions</th><th>Status</th>
+        </tr></thead><tbody id="inboundList"></tbody></table></div>
+      </div>
+    </div>
+
+    <div id="config" style="display:none">
+      <div class="card">
+        <div class="card-header"><h3>⚙️ Export Xray Config</h3></div>
+        <div class="card-header" style="margin-top:8px">
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" onclick="exportConfigJSON()">📄 Export JSON</button>
+            <button class="btn btn-outline" onclick="downloadConfig()">⬇️ Download</button>
+          </div>
+        </div>
+        <pre id="configPreview" style="background:var(--bg);padding:16px;border-radius:4px;border:1px solid var(--border);overflow:auto;max-height:400px;font-size:12px;font-family:monospace;white-space:pre-wrap;color:var(--text2)">Click export to see config...</pre>
+      </div>
+    </div>
+
+    <div id="settings" style="display:none">
+      <div class="card">
+        <div class="card-header"><h3>🔧 Panel Settings</h3></div>
+        <div class="form-row">
+          <div class="form-group"><label>Panel Port</label><input id="sPanelPort" type="number" value="3000"></div>
+          <div class="form-group"><label>Web Path</label><input id="sWebPath" value="/"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Username</label><input id="sUsername" value="admin"></div>
+          <div class="form-group"><label>Password</label><input id="sPassword" type="password" value="admin123"></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inbound Modal -->
+<div class="modal-overlay" id="inboundModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="inboundModalTitle">Add Inbound</h3>
+      <button class="modal-close" onclick="closeModal('inboundModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <div class="tab active" onclick="switchInboundTab(this,'general')">General</div>
+        <div class="tab" onclick="switchInboundTab(this,'security')">Security</div>
+        <div class="tab" onclick="switchInboundTab(this,'transport')">Transport</div>
+        <div class="tab" onclick="switchInboundTab(this,'clients')">Clients</div>
+      </div>
+
+      <div id="ibGeneral">
+        <div class="form-row">
+          <div class="form-group"><label>Remark</label><input id="ibRemark"></div>
+          <div class="form-group"><label>Port</label><input id="ibPort" type="number" value="443"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Protocol</label>
+            <select id="ibProtocol" onchange="updateInboundForm()">
+              <option value="vless">VLESS</option>
+              <option value="vmess">VMess</option>
+              <option value="trojan">Trojan</option>
+              <option value="shadowsocks">Shadowsocks</option>
+              <option value="socks">SOCKS</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Listen</label><input id="ibListen" value="0.0.0.0"></div>
+        </div>
+        <div class="form-group"><label>Sniffing</label>
+          <label class="toggle"><input id="ibSniffing" type="checkbox" checked><span class="slider"></span></label>
+        </div>
+      </div>
+
+      <div id="ibSecurity" style="display:none">
+        <div class="form-group"><label>Security</label>
+          <select id="ibSecurity" onchange="updateSecurityForm()">
+            <option value="none">None</option>
+            <option value="tls">TLS</option>
+            <option value="reality">REALITY</option>
+            <option value="vision">Vision (REALITY + flow)</option>
+          </select>
+        </div>
+        <div id="tlsFields" style="display:none">
+          <div class="form-group"><label>SNI</label><input id="ibSni"></div>
+          <div class="form-group"><label>Certificate File Path</label><input id="ibCertFile"></div>
+          <div class="form-group"><label>Key File Path</label><input id="ibKeyFile"></div>
+        </div>
+        <div id="realityFields" style="display:block">
+          <div class="form-group"><label>Server Names (comma separated)</label><input id="ibServerNames" value="google.com"></div>
+          <div class="form-group"><label>Private Key</label><input id="ibPrivateKey"></div>
+          <div class="form-group"><label>Short IDs (comma separated)</label><input id="ibShortIds" value="6ba85179e30d4fc2"></div>
+          <div class="form-group"><label>Dest (target address for reality)</label><input id="ibDest" value="google.com:443"></div>
+        </div>
+      </div>
+
+      <div id="ibTransport" style="display:none">
+        <div class="form-group"><label>Transport</label>
+          <select id="ibTransport" onchange="updateTransportForm()">
+            <option value="tcp">TCP</option>
+            <option value="ws">WebSocket</option>
+            <option value="kcp">mKCP</option>
+            <option value="httpupgrade">HTTPUpgrade</option>
+            <option value="xhttp">XHTTP</option>
+            <option value="grpc">gRPC</option>
+            <option value="quic">QUIC</option>
+            <option value="splithttp">SplitHTTP</option>
+          </select>
+        </div>
+        <div id="transportFields">
+          <div class="form-group"><label>Path</label><input id="ibPath" value="/"></div>
+          <div class="form-group"><label>Host</label><input id="ibHost"></div>
+          <div id="grpcFields" style="display:none">
+            <div class="form-group"><label>Service Name</label><input id="ibServiceName" value="gun"></div>
+            <div class="form-group"><label>gRPC Mode</label>
+              <select id="ibGrpcMode"><option value="gun">Gun</option><option value="multi">Multi</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ibClients" style="display:none">
+        <div id="clientList"></div>
+        <button class="btn btn-outline btn-sm" onclick="addClientToForm()" style="margin-top:8px">+ Add Client</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('inboundModal')">Cancel</button>
+      <button class="btn btn-primary" id="saveInboundBtn" onclick="saveInbound()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Client Modal -->
+<div class="modal-overlay" id="clientModal">
+  <div class="modal" style="max-width:450px">
+    <div class="modal-header">
+      <h3 id="clientModalTitle">Add Client</h3>
+      <button class="modal-close" onclick="closeModal('clientModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Name</label><input id="cName"></div>
+      <div class="form-group"><label>Email</label><input id="cEmail" type="email"></div>
+      <div class="form-group"><label>Flow</label>
+        <select id="cFlow">
+          <option value="">None</option>
+          <option value="xtls-rprx-vision">xtls-rprx-vision</option>
+          <option value="xtls-rprx-vision-udp443">xtls-rprx-vision-udp443</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Enable</label>
+        <label class="toggle"><input id="cEnable" type="checkbox" checked><span class="slider"></span></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('clientModal')">Cancel</button>
+      <button class="btn btn-primary" id="saveClientBtn" onclick="saveClient()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== Auth ====================
+let token = localStorage.getItem('token');
+let editingInboundId = null;
+let editingClientData = null;
+
+async function api(path, opts = {}) {
+  const headers = {};
+  if (token) headers['Authorization'] = `Basic ${token}`;
+  if (opts.body && !(opts.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const res = await fetch(path, { ...opts, headers });
+  if (res.status === 401) { logout(); return null; }
+  try { return await res.json(); } catch { return null; }
+}
+
+async function login() {
+  const username = document.getElementById('loginUser').value;
+  const password = document.getElementById('loginPass').value;
+  const res = await api('/api/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password })
+  });
+  if (res && res.token) {
+    token = res.token;
+    localStorage.setItem('token', token);
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadDashboard();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function logout() {
+  token = null;
+  localStorage.removeItem('token');
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+// Auto-login
+if (token) {
+  api('/api/server/info').then(data => {
+    if (data) {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      loadDashboard();
+    } else {
+      localStorage.removeItem('token');
+    }
+  }).catch(() => localStorage.removeItem('token'));
+}
+
+// ==================== Navigation ====================
+function showPage(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.main > div[id]').forEach(d => d.style.display = 'none');
+  document.querySelector(`.nav-item[onclick*="${page}"]`)?.classList.add('active');
+  document.getElementById(page).style.display = 'block';
+
+  const titles = { dashboard: ['Dashboard', 'Overview'], inbounds: ['Inbounds', 'Manage nodes'], config: ['Export Config', 'Generate xray JSON'], settings: ['Settings', 'Panel configuration'] };
+  const t = titles[page] || ['Page', ''];
+  document.getElementById('pageTitle').textContent = t[0];
+  document.getElementById('pageSubtitle').textContent = t[1];
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'inbounds') loadInbounds();
+  if (page === 'settings') loadSettings();
+}
+
+// ==================== Toast ====================
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast toast-' + type;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 2500);
+}
+
+// ==================== Modal ====================
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+window.onclick = function(e) {
+  if (e.target.classList.contains('modal-overlay')) e.target.style.display = 'none';
+};
+
+// ==================== Dashboard ====================
+async function loadDashboard() {
+  const info = await api('/api/server/info');
+  if (!info) return;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${info.inbounds}</div><div class="stat-label">Inbounds</div></div>
+    <div class="stat-card"><div class="stat-value">${info.clients}</div><div class="stat-label">Clients</div></div>
+    <div class="stat-card"><div class="stat-value">${info.cpu}</div><div class="stat-label">CPU</div></div>
+    <div class="stat-card"><div class="stat-value">${info.memory.used} / ${info.memory.total}</div><div class="stat-label">Memory</div></div>
+    <div class="stat-card"><div class="stat-value">${info.uptime}</div><div class="stat-label">Uptime</div></div>
+  `;
+  const inbounds = await api('/api/inbounds');
+  if (!inbounds) return;
+  const tbody = document.getElementById('inboundsOverview');
+  tbody.innerHTML = inbounds.map(i => `<tr>
+    <td>${i.remark}</td>
+    <td><span class="badge badge-${i.protocol}">${i.protocol}</span></td>
+    <td>${i.port}</td>
+    <td><span class="badge badge-transport">${i.transport}</span></td>
+    <td>${i.security !== 'none' ? `<span class="badge badge-security">${i.security}</span>` : '<span style="color:var(--text2)">none</span>'}</td>
+    <td>${i.clients.length}</td>
+    <td class="${i.enable !== false ? 'status-enabled' : 'status-disabled'}">${i.enable !== false ? '● Active' : '○ Disabled'}</td>
+  </tr>`).join('');
+}
+
+// ==================== Inbounds ====================
+let inboundClientsData = [];
+
+async function loadInbounds() {
+  const inbounds = await api('/api/inbounds');
+  if (!inbounds) return;
+  const tbody = document.getElementById('inboundList');
+  tbody.innerHTML = inbounds.map(i => {
+    const clientsHtml = i.clients.map(c => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span>${c.name || c.email} ${c.enable === false ? '🚫' : '✅'}</span>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-success" onclick="getShareLink('${i.id}','${c.id}')">🔗</button>
+          <button class="btn btn-sm btn-outline" onclick="editClient('${i.id}','${c.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteClient('${i.id}','${c.id}')">🗑️</button>
+        </div>
+      </div>`).join('');
+
+    return `<tr>
+      <td><strong>${i.remark}</strong></td>
+      <td><span class="badge badge-${i.protocol}">${i.protocol}</span></td>
+      <td>${i.port}</td>
+      <td><span class="badge badge-transport">${i.transport}</span></td>
+      <td>${i.security !== 'none' ? `<span class="badge badge-security">${i.security}</span>` : '-'}</td>
+      <td>
+        <details>
+          <summary>${i.clients.length} client(s)</summary>
+          <div style="margin-top:4px">
+            <button class="btn btn-sm btn-success" onclick="openAddClient('${i.id}')" style="margin-bottom:4px">+ Add</button>
+            ${clientsHtml}
+          </div>
+        </details>
+      </td>
+      <td>
+        <div class="btn-group">
+          <button class="btn btn-sm btn-primary" onclick="editInbound('${i.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteInbound('${i.id}')">🗑️</button>
+          <button class="btn btn-sm btn-outline" onclick="getAllLinks('${i.id}')">🔗</button>
+        </div>
+      </td>
+      <td style="text-align:center">
+        <label class="toggle">
+          <input type="checkbox" ${i.enable !== false ? 'checked' : ''} onchange="toggleInbound('${i.id}', this.checked)">
+          <span class="slider"></span>
+        </label>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleInbound(id, enable) {
+  await api(`/api/inbounds/${id}`, { method: 'PUT', body: JSON.stringify({ enable }) });
+  showToast(`Inbound ${enable ? 'enabled' : 'disabled'}`);
+}
+
+// ==================== Add/Edit Inbound Modal ====================
+function showAddInbound() {
+  editingInboundId = null;
+  document.getElementById('inboundModalTitle').textContent = 'Add Inbound';
+  document.getElementById('saveInboundBtn').textContent = 'Create';
+  resetInboundForm();
+  inboundClientsData = [];
+  openModal('inboundModal');
+}
+
+async function editInbound(id) {
+  const inbound = await api(`/api/inbounds/${id}`);
+  if (!inbound) return;
+  editingInboundId = id;
+  document.getElementById('inboundModalTitle').textContent = 'Edit Inbound';
+  document.getElementById('saveInboundBtn').textContent = 'Update';
+  document.getElementById('ibRemark').value = inbound.remark || '';
+  document.getElementById('ibPort').value = inbound.port || 443;
+  document.getElementById('ibProtocol').value = inbound.protocol || 'vless';
+  document.getElementById('ibListen').value = inbound.listen || '0.0.0.0';
+  document.getElementById('ibSniffing').checked = inbound.sniffing !== false;
+  document.getElementById('ibSecurity').value = inbound.security || 'none';
+  document.getElementById('ibSni').value = inbound.sni || '';
+  document.getElementById('ibCertFile').value = inbound.certificateFile || '';
+  document.getElementById('ibKeyFile').value = inbound.keyFile || '';
+  document.getElementById('ibServerNames').value = Array.isArray(inbound.serverNames) ? inbound.serverNames.join(',') : (inbound.serverNames || '');
+  document.getElementById('ibPrivateKey').value = inbound.privateKey || '';
+  document.getElementById('ibShortIds').value = Array.isArray(inbound.shortIds) ? inbound.shortIds.join(',') : (inbound.shortIds || '');
+  document.getElementById('ibDest').value = inbound.dest || '';
+  document.getElementById('ibTransport').value = inbound.transport || 'tcp';
+  document.getElementById('ibPath').value = inbound.path || '/';
+  document.getElementById('ibHost').value = inbound.host || '';
+  document.getElementById('ibServiceName').value = inbound.serviceName || 'gun';
+  document.getElementById('ibGrpcMode').value = inbound.grpcMode || 'gun';
+  inboundClientsData = inbound.clients.map(c => ({ ...c, _isNew: false }));
+  updateInboundForm();
+  updateSecurityForm();
+  updateTransportForm();
+  renderClientForm();
+  openModal('inboundModal');
+}
+
+function resetInboundForm() {
+  document.getElementById('ibRemark').value = '';
+  document.getElementById('ibPort').value = 443;
+  document.getElementById('ibProtocol').value = 'vless';
+  document.getElementById('ibListen').value = '0.0.0.0';
+  document.getElementById('ibSniffing').checked = true;
+  document.getElementById('ibSecurity').value = 'none';
+  document.getElementById('ibSni').value = '';
+  document.getElementById('ibCertFile').value = '';
+  document.getElementById('ibKeyFile').value = '';
+  document.getElementById('ibServerNames').value = 'google.com';
+  document.getElementById('ibPrivateKey').value = '';
+  document.getElementById('ibShortIds').value = '6ba85179e30d4fc2';
+  document.getElementById('ibDest').value = '';
+  document.getElementById('ibTransport').value = 'tcp';
+  document.getElementById('ibPath').value = '/';
+  document.getElementById('ibHost').value = '';
+  document.getElementById('ibServiceName').value = 'gun';
+  document.getElementById('ibGrpcMode').value = 'gun';
+  inboundClientsData = [];
+  renderClientForm();
+  updateInboundForm();
+  updateSecurityForm();
+  updateTransportForm();
+}
+
+function updateInboundForm() {
+  // Protocol-specific UI
+}
+
+function updateSecurityForm() {
+  const sec = document.getElementById('ibSecurity').value;
+  document.getElementById('tlsFields').style.display = sec === 'tls' ? 'block' : 'none';
+  document.getElementById('realityFields').style.display = (sec === 'reality' || sec === 'vision') ? 'block' : 'none';
+}
+
+function updateTransportForm() {
+  const t = document.getElementById('ibTransport').value;
+  document.getElementById('transportFields').style.display = 'block';
+  document.getElementById('grpcFields').style.display = t === 'grpc' ? 'block' : 'none';
+}
+
+function switchInboundTab(el, tab) {
+  document.querySelectorAll('#inboundModal .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  ['ibGeneral','ibSecurity','ibTransport','ibClients'].forEach(id => {
+    document.getElementById(id).style.display = id === `ib${tab.charAt(0).toUpperCase() + tab.slice(1)}` ? 'block' : 'none';
+  });
+}
+
+// ==================== Client form in modal ====================
+function renderClientForm() {
+  const container = document.getElementById('clientList');
+  container.innerHTML = inboundClientsData.map((c, idx) => `
+    <div style="background:var(--bg);padding:8px;border-radius:4px;margin-bottom:6px;border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <strong style="font-size:13px">${c.name || c.email || 'Client ' + (idx+1)}</strong>
+        <button class="btn btn-sm btn-danger" onclick="removeClientFromForm(${idx})">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2)">ID: ${c.id?.substring(0,8)}... | Flow: ${c.flow || 'none'}</div>
+    </div>
+  `).join('');
+  if (!inboundClientsData.length) {
+    container.innerHTML = '<div style="color:var(--text2);font-size:13px">No clients. Add one below.</div>';
+  }
+}
+
+function addClientToForm() {
+  const uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; const v = c === 'x' ? r : (r&0x3|0x8); return v.toString(16); });
+  inboundClientsData.push({
+    id: uuid,
+    clientId: uuid,
+    email: `user${inboundClientsData.length + 1}@example.com`,
+    name: `User ${inboundClientsData.length + 1}`,
+    flow: '',
+    enable: true,
+    _isNew: true
+  });
+  renderClientForm();
+}
+
+function removeClientFromForm(idx) {
+  inboundClientsData.splice(idx, 1);
+  renderClientForm();
+}
+
+// ==================== Save Inbound ====================
+async function saveInbound() {
+  const data = {
+    remark: document.getElementById('ibRemark').value,
+    port: parseInt(document.getElementById('ibPort').value),
+    protocol: document.getElementById('ibProtocol').value,
+    listen: document.getElementById('ibListen').value,
+    sniffing: document.getElementById('ibSniffing').checked,
+    security: document.getElementById('ibSecurity').value,
+    sni: document.getElementById('ibSni').value,
+    certificateFile: document.getElementById('ibCertFile').value,
+    keyFile: document.getElementById('ibKeyFile').value,
+    serverNames: document.getElementById('ibServerNames').value.split(',').map(s => s.trim()).filter(Boolean),
+    privateKey: document.getElementById('ibPrivateKey').value,
+    shortIds: document.getElementById('ibShortIds').value.split(',').map(s => s.trim()).filter(Boolean),
+    dest: document.getElementById('ibDest').value,
+    transport: document.getElementById('ibTransport').value,
+    path: document.getElementById('ibPath').value,
+    host: document.getElementById('ibHost').value,
+    serviceName: document.getElementById('ibServiceName').value,
+    grpcMode: document.getElementById('ibGrpcMode').value,
+    clients: inboundClientsData.map(c => ({ ...c, _isNew: undefined }))
+  };
+
+  if (!data.remark) { showToast('Remark is required', 'error'); return; }
+
+  let res;
+  if (editingInboundId) {
+    res = await api(`/api/inbounds/${editingInboundId}`, { method: 'PUT', body: JSON.stringify(data) });
+    if (res) showToast('Inbound updated');
+  } else {
+    res = await api('/api/inbounds', { method: 'POST', body: JSON.stringify(data) });
+    if (res) showToast('Inbound created');
+  }
+  if (res) {
+    closeModal('inboundModal');
+    loadInbounds();
+  }
+}
+
+// ==================== Delete Inbound ====================
+async function deleteInbound(id) {
+  if (!confirm('Delete this inbound?')) return;
+  const res = await api(`/api/inbounds/${id}`, { method: 'DELETE' });
+  if (res) { showToast('Inbound deleted'); loadInbounds(); }
+}
+
+// ==================== Client CRUD ====================
+function openAddClient(inboundId) {
+  editingClientData = { inboundId, clientId: null };
+  document.getElementById('clientModalTitle').textContent = 'Add Client';
+  document.getElementById('saveClientBtn').textContent = 'Add';
+  document.getElementById('cName').value = '';
+  document.getElementById('cEmail').value = '';
+  document.getElementById('cFlow').value = '';
+  document.getElementById('cEnable').checked = true;
+  openModal('clientModal');
+}
+
+async function editClient(inboundId, clientId) {
+  const inbound = await api(`/api/inbounds/${inboundId}`);
+  if (!inbound) return;
+  const client = inbound.clients.find(c => c.id === clientId);
+  if (!client) return;
+  editingClientData = { inboundId, clientId };
+  document.getElementById('clientModalTitle').textContent = 'Edit Client';
+  document.getElementById('saveClientBtn').textContent = 'Update';
+  document.getElementById('cName').value = client.name || '';
+  document.getElementById('cEmail').value = client.email || '';
+  document.getElementById('cFlow').value = client.flow || '';
+  document.getElementById('cEnable').checked = client.enable !== false;
+  openModal('clientModal');
+}
+
+async function saveClient() {
+  const data = {
+    name: document.getElementById('cName').value || 'user',
+    email: document.getElementById('cEmail').value || 'user@example.com',
+    flow: document.getElementById('cFlow').value,
+    enable: document.getElementById('cEnable').checked
+  };
+  if (!editingClientData) return;
+  const { inboundId, clientId } = editingClientData;
+  let res;
+  if (clientId) {
+    res = await api(`/api/inbounds/${inboundId}/clients/${clientId}`, { method: 'PUT', body: JSON.stringify(data) });
+    if (res) showToast('Client updated');
+  } else {
+    res = await api(`/api/inbounds/${inboundId}/clients`, { method: 'POST', body: JSON.stringify(data) });
+    if (res) showToast('Client added');
+  }
+  if (res) {
+    closeModal('clientModal');
+    loadInbounds();
+  }
+}
+
+async function deleteClient(inboundId, clientId) {
+  if (!confirm('Delete this client?')) return;
+  const res = await api(`/api/inbounds/${inboundId}/clients/${clientId}`, { method: 'DELETE' });
+  if (res) { showToast('Client deleted'); loadInbounds(); }
+}
+
+// ==================== Share Links ====================
+async function getShareLink(inboundId, clientId) {
+  const res = await api(`/api/share/${inboundId}/${clientId}?server=${location.hostname}`);
+  if (!res) return;
+  await navigator.clipboard.writeText(res.link).catch(() => {});
+  showToast('Link copied to clipboard!');
+}
+
+async function getAllLinks(inboundId) {
+  const res = await api(`/api/share/all/${inboundId}?server=${location.hostname}`);
+  if (!res) return;
+  const links = res.links.map(l => l.link).join('\n');
+  await navigator.clipboard.writeText(links).catch(() => {});
+  showToast(`${res.links.length} links copied!`);
+}
+
+// ==================== Config Export ====================
+async function exportConfigJSON() {
+  const config = await api('/api/config/export');
+  if (!config) return;
+  document.getElementById('configPreview').textContent = JSON.stringify(config, null, 2);
+  showToast('Config generated');
+}
+
+async function downloadConfig() {
+  window.open('/api/config/download', '_blank');
+}
+
+// ==================== Settings ====================
+async function loadSettings() {
+  const s = await api('/api/settings');
+  if (!s) return;
+  document.getElementById('sPanelPort').value = s.port || 3000;
+  document.getElementById('sWebPath').value = s.webPath || '/';
+  document.getElementById('sUsername').value = s.webUser || 'admin';
+  document.getElementById('sPassword').value = s.webPass || 'admin123';
+}
+
+async function saveSettings() {
+  const data = {
+    port: parseInt(document.getElementById('sPanelPort').value),
+    webPath: document.getElementById('sWebPath').value,
+    webUser: document.getElementById('sUsername').value,
+    webPass: document.getElementById('sPassword').value
+  };
+  await api('/api/settings', { method: 'PUT', body: JSON.stringify(data) });
+  showToast('Settings saved (restart to apply)');
+}
+</script>
+</body>
+</html>
